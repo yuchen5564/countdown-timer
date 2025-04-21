@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>簡易倒數計時器</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+            transition: background-color 0.5s ease;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+        }
+        .fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: background-color 0.5s ease;
+        }
+        .fullscreen-timer {
+            font-size: 15vw;
+            color: black;
+            text-align: center;
+            transition: color 0.5s ease;
+        }
+        .fullscreen-dark {
+            background-color: black;
+        }
+        .fullscreen-timer-dark {
+            color: white;
+        }
+        .fullscreen-controls {
+            position: absolute;
+            bottom: 50px;
+            display: flex;
+            gap: 20px;
+        }
+        .exit-fullscreen {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent;
+            color: #333;
+            border: 2px solid #333;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 5px;
+            transition: color 0.5s ease, border-color 0.5s ease;
+        }
+        .exit-fullscreen.dark {
+            color: white;
+            border-color: white;
+        }
+        .reminder-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .reminder-text {
+            color: white;
+            font-size: 5vw;
+            text-align: center;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-top: 0;
+        }
+        .timer-display {
+            font-size: 3rem;
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #333;
+        }
+        .settings {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .start-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .pause-btn {
+            background-color: #FF9800;
+            color: white;
+        }
+        .reset-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .notification {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            display: none;
+        }
+        .notification.alert {
+            background-color: #ffeb3b;
+            color: #333;
+        }
+        .notification.finished {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="main-container">
+        <h1>簡易倒數計時器</h1>
+        
+        <div class="settings" id="settings-panel">
+            <div class="form-group">
+                <label for="hours">小時：</label>
+                <input type="number" id="hours" min="0" max="23" value="0">
+            </div>
+            <div class="form-group">
+                <label for="minutes">分鐘：</label>
+                <input type="number" id="minutes" min="0" max="59" value="0">
+            </div>
+            <div class="form-group">
+                <label for="seconds">秒數：</label>
+                <input type="number" id="seconds" min="0" max="59" value="0">
+            </div>
+            <div class="form-group">
+                <label for="reminderMinutes">提醒時間（剩餘分鐘）：</label>
+                <input type="number" id="reminderMinutes" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="reminderSeconds">提醒時間（剩餘秒數）：</label>
+                <input type="number" id="reminderSeconds" min="0" max="59" value="0">
+            </div>
+        </div>
+        
+        <div class="timer-display" id="timer">00:00:00</div>
+        
+        <div class="notification" id="notification"></div>
+        
+        <div class="buttons">
+            <button class="start-btn" id="start-btn">開始</button>
+            <button class="pause-btn" id="pause-btn" disabled>暫停</button>
+            <button class="reset-btn" id="reset-btn" disabled>重設</button>
+        </div>
+    </div>
+    
+    <!-- 全螢幕倒數計時 -->
+    <div id="fullscreen-view" style="display: none;" class="fullscreen">
+        <button id="exit-fullscreen" class="exit-fullscreen">離開全螢幕</button>
+        <div id="fullscreen-timer" class="fullscreen-timer">00:00:00</div>
+        <div class="fullscreen-controls">
+            <button id="fullscreen-pause-btn" class="pause-btn">暫停</button>
+            <button id="fullscreen-reset-btn" class="reset-btn">重設</button>
+        </div>
+    </div>
+    
+    <!-- 提醒黑色覆蓋層 -->
+    <div id="reminder-overlay" class="reminder-overlay">
+        <div class="reminder-text">提醒時間到！</div>
+    </div>
+
+    <script>
+        // DOM 元素
+        const hoursInput = document.getElementById('hours');
+        const minutesInput = document.getElementById('minutes');
+        const secondsInput = document.getElementById('seconds');
+        const reminderMinutesInput = document.getElementById('reminderMinutes');
+        const reminderSecondsInput = document.getElementById('reminderSeconds');
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('start-btn');
+        const pauseBtn = document.getElementById('pause-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const notification = document.getElementById('notification');
+        const settingsPanel = document.getElementById('settings-panel');
+        const mainContainer = document.getElementById('main-container');
+        const fullscreenView = document.getElementById('fullscreen-view');
+        const fullscreenTimer = document.getElementById('fullscreen-timer');
+        const exitFullscreenBtn = document.getElementById('exit-fullscreen');
+        const reminderOverlay = document.getElementById('reminder-overlay');
+        const fullscreenPauseBtn = document.getElementById('fullscreen-pause-btn');
+        const fullscreenResetBtn = document.getElementById('fullscreen-reset-btn');
+        
+        // 計時器變數
+        let countdown;
+        let totalSeconds = 0;
+        let remainingSeconds = 0;
+        let reminderSeconds = 0;
+        let isRunning = false;
+        let isPaused = false;
+        let reminderTriggered = false;
+        let isFullscreen = false;
+        
+        // 初始化
+        function init() {
+            // 設定輸入限制
+            hoursInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 23) this.value = 23;
+            });
+            
+            minutesInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 59) this.value = 59;
+            });
+            
+            secondsInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 59) this.value = 59;
+            });
+            
+            reminderMinutesInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+            });
+            
+            reminderSecondsInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 59) this.value = 59;
+            });
+            
+            // 按鈕事件
+            startBtn.addEventListener('click', startTimer);
+            pauseBtn.addEventListener('click', pauseTimer);
+            resetBtn.addEventListener('click', resetTimer);
+            exitFullscreenBtn.addEventListener('click', exitFullscreen);
+            fullscreenPauseBtn.addEventListener('click', pauseTimer);
+            fullscreenResetBtn.addEventListener('click', resetTimer);
+            
+            // 初始顯示
+            updateTimerDisplay(0);
+            
+            // 點擊黑色提醒覆蓋層時關閉
+            reminderOverlay.addEventListener('click', function() {
+                reminderOverlay.style.display = 'none';
+            });
+        }
+        
+        // 進入全螢幕模式
+        function enterFullscreen() {
+            mainContainer.style.display = 'none';
+            fullscreenView.style.display = 'flex';
+            fullscreenView.classList.remove('fullscreen-dark');
+            fullscreenTimer.classList.remove('fullscreen-timer-dark');
+            exitFullscreenBtn.classList.remove('dark');
+            isFullscreen = true;
+            
+            // 同步全螢幕按鈕狀態
+            fullscreenPauseBtn.disabled = pauseBtn.disabled;
+            fullscreenResetBtn.disabled = resetBtn.disabled;
+            
+            if (isPaused) {
+                fullscreenPauseBtn.textContent = '繼續';
+            } else {
+                fullscreenPauseBtn.textContent = '暫停';
+            }
+        }
+        
+        // 退出全螢幕模式
+        function exitFullscreen() {
+            fullscreenView.style.display = 'none';
+            mainContainer.style.display = 'block';
+            isFullscreen = false;
+        }
+        
+        // 開始計時器
+        function startTimer() {
+            if (!isRunning) {
+                // 獲取設定時間
+                const hours = parseInt(hoursInput.value) || 0;
+                const minutes = parseInt(minutesInput.value) || 0;
+                const seconds = parseInt(secondsInput.value) || 0;
+                const reminderMins = parseInt(reminderMinutesInput.value) || 0;
+                const reminderSecs = parseInt(reminderSecondsInput.value) || 0;
+                
+                // 計算總秒數
+                totalSeconds = hours * 3600 + minutes * 60 + seconds;
+                reminderSeconds = reminderMins * 60 + reminderSecs;
+                
+                if (totalSeconds <= 0) {
+                    alert('請設定有效的時間！');
+                    return;
+                }
+                
+                // 確保提醒時間不大於總時間
+                if (reminderSeconds > totalSeconds) {
+                    reminderSeconds = totalSeconds;
+                }
+                
+                reminderTriggered = false;
+                remainingSeconds = totalSeconds;
+                
+                // 更新 UI
+                startBtn.disabled = true;
+                pauseBtn.disabled = false;
+                resetBtn.disabled = false;
+                settingsPanel.style.opacity = "0.5";
+                hoursInput.disabled = true;
+                minutesInput.disabled = true;
+                secondsInput.disabled = true;
+                reminderMinutesInput.disabled = true;
+                reminderSecondsInput.disabled = true;
+                
+                // 開始倒數
+                isRunning = true;
+                isPaused = false;
+                updateTimerDisplay(remainingSeconds);
+                countdown = setInterval(updateTimer, 1000);
+                
+                // 隱藏通知
+                notification.style.display = 'none';
+                
+                // 進入全螢幕模式
+                enterFullscreen();
+            } else if (isPaused) {
+                // 從暫停恢復
+                isPaused = false;
+                pauseBtn.textContent = '暫停';
+                countdown = setInterval(updateTimer, 1000);
+                
+                // 如果不在全螢幕，則進入全螢幕
+                if (!isFullscreen) {
+                    enterFullscreen();
+                }
+            }
+        }
+        
+        // 暫停計時器
+        function pauseTimer() {
+            if (isRunning && !isPaused) {
+                clearInterval(countdown);
+                isPaused = true;
+                pauseBtn.textContent = '繼續';
+            } else if (isPaused) {
+                startTimer(); // 恢復計時
+            }
+        }
+        
+        // 重設計時器
+        function resetTimer() {
+            clearInterval(countdown);
+            isRunning = false;
+            isPaused = false;
+            
+            // 重設按鈕狀態
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+            pauseBtn.textContent = '暫停';
+            
+            // 啟用設定面板
+            settingsPanel.style.opacity = "1";
+            hoursInput.disabled = false;
+            minutesInput.disabled = false;
+            secondsInput.disabled = false;
+            reminderMinutesInput.disabled = false;
+            reminderSecondsInput.disabled = false;
+            
+            // 重設顯示
+            updateTimerDisplay(0);
+            
+            // 隱藏通知
+            notification.style.display = 'none';
+            
+            // 隱藏提醒覆蓋層
+            reminderOverlay.style.display = 'none';
+            
+            // 如果在全螢幕模式則退出
+            if (isFullscreen) {
+                exitFullscreen();
+            }
+        }
+        
+        // 更新計時器
+        function updateTimer() {
+            remainingSeconds--;
+            
+            if (remainingSeconds <= 0) {
+                // 時間到
+                clearInterval(countdown);
+                isRunning = false;
+                
+                // 顯示完成通知
+                if (!isFullscreen) {
+                    notification.textContent = '時間到！';
+                    notification.className = 'notification finished';
+                    notification.style.display = 'block';
+                }
+                
+                // 播放提示音
+                playAlarm();
+                
+                // 更新 UI
+                updateTimerDisplay(0);
+                pauseBtn.disabled = true;
+                fullscreenPauseBtn.disabled = true;
+                
+                // 如果在全螢幕模式，則退出
+                if (isFullscreen) {
+                    exitFullscreen();
+                }
+            } else {
+                // 檢查提醒時間
+                if (reminderSeconds > 0 && remainingSeconds <= reminderSeconds && !reminderTriggered) {
+                    // 觸發提醒 - 如果在全螢幕模式，將背景變為黑色，文字變為白色
+                    if (isFullscreen) {
+                        fullscreenView.classList.add('fullscreen-dark');
+                        fullscreenTimer.classList.add('fullscreen-timer-dark');
+                        exitFullscreenBtn.classList.add('dark');
+                    } else {
+                        // 在非全螢幕模式下使用覆蓋層
+                        reminderOverlay.style.display = 'flex';
+                        // 三秒後自動關閉提醒
+                        setTimeout(function() {
+                            reminderOverlay.style.display = 'none';
+                        }, 3000);
+                    }
+                    
+                    // 播放提示音
+                    playBeep();
+                    
+                    // 標記提醒已觸發
+                    reminderTriggered = true;
+                }
+                
+                // 更新顯示
+                updateTimerDisplay(remainingSeconds);
+            }
+        }
+        
+        // 更新顯示
+        function updateTimerDisplay(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            
+            const timeString = 
+                (h < 10 ? '0' : '') + h + ':' +
+                (m < 10 ? '0' : '') + m + ':' +
+                (s < 10 ? '0' : '') + s;
+            
+            // 更新普通顯示和全螢幕顯示
+            timerDisplay.textContent = timeString;
+            fullscreenTimer.textContent = timeString;
+        }
+        
+        // 播放提醒聲音
+        function playBeep() {
+            try {
+                const beep = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU");
+                beep.volume = 0.5;
+                beep.play();
+            } catch (e) {
+                console.log('無法播放提醒聲音');
+            }
+        }
+        
+        // 播放鬧鈴聲音
+        function playAlarm() {
+            try {
+                const alarm = new Audio("data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU");
+                alarm.volume = 1.0;
+                alarm.play();
+                
+                // 連續播放三次
+                setTimeout(() => alarm.play(), 500);
+                setTimeout(() => alarm.play(), 1000);
+            } catch (e) {
+                console.log('無法播放鬧鈴聲音');
+            }
+        }
+        
+        // 初始化應用
+        window.onload = init;
+    </script>
+</body>
+</html>
