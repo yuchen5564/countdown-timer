@@ -129,16 +129,30 @@
         .form-group {
             margin-bottom: 15px;
         }
+        .input-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        .input-group {
+            width: 30%;
+        }
+        .time-label {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
         label {
             display: block;
             margin-bottom: 5px;
-            font-weight: bold;
+            font-weight: normal;
+            font-size: 0.9rem;
         }
         input {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            border: 1px solid #333;
+            border-radius: 8px;
             box-sizing: border-box;
         }
         .buttons {
@@ -193,41 +207,65 @@
         <h1>簡易倒數計時器</h1>
         
         <div class="settings" id="settings-panel">
-            <div class="form-group">
-                <label for="hours">小時：</label>
-                <input type="number" id="hours" min="0" max="23" value="0">
+            <div class="time-label">設定時間</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="hours">小時：</label>
+                    <input type="number" id="hours" min="0" max="23" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="minutes">分鐘：</label>
+                    <input type="number" id="minutes" min="0" max="59" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="seconds">秒數：</label>
+                    <input type="number" id="seconds" min="0" max="59" value="0">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="minutes">分鐘：</label>
-                <input type="number" id="minutes" min="0" max="59" value="0">
+            
+            <div class="time-label">提醒時間</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <!-- 空白區塊保留小時位置 -->
+                </div>
+                <div class="input-group">
+                    <label for="reminderMinutes">剩餘分鐘：</label>
+                    <input type="number" id="reminderMinutes" min="0" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="reminderSeconds">剩餘秒數：</label>
+                    <input type="number" id="reminderSeconds" min="0" max="59" value="0">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="seconds">秒數：</label>
-                <input type="number" id="seconds" min="0" max="59" value="0">
+            
+            <div class="time-label">最後警告時間</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <!-- 空白區塊保留小時位置 -->
+                </div>
+                <div class="input-group">
+                    <label for="finalAlertMinutes">剩餘分鐘：</label>
+                    <input type="number" id="finalAlertMinutes" min="0" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="finalAlertSeconds">剩餘秒數：</label>
+                    <input type="number" id="finalAlertSeconds" min="0" max="59" value="0">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="reminderMinutes">提醒時間（剩餘分鐘）：</label>
-                <input type="number" id="reminderMinutes" min="0" value="0">
-            </div>
-            <div class="form-group">
-                <label for="reminderSeconds">提醒時間（剩餘秒數）：</label>
-                <input type="number" id="reminderSeconds" min="0" max="59" value="0">
-            </div>
-            <div class="form-group">
-                <label for="finalAlertMinutes">最後警告時間（剩餘分鐘）：</label>
-                <input type="number" id="finalAlertMinutes" min="0" value="0">
-            </div>
-            <div class="form-group">
-                <label for="finalAlertSeconds">最後警告時間（剩餘秒數）：</label>
-                <input type="number" id="finalAlertSeconds" min="0" max="59" value="0">
-            </div>
-            <div class="form-group">
-                <label for="extraTimeMinutes">最後允許時間（倒數結束後分鐘）：</label>
-                <input type="number" id="extraTimeMinutes" min="0" value="0">
-            </div>
-            <div class="form-group">
-                <label for="extraTimeSeconds">最後允許時間（倒數結束後秒數）：</label>
-                <input type="number" id="extraTimeSeconds" min="0" max="59" value="0">
+            
+            <div class="time-label">最後允許時間</div>
+            <div class="input-row">
+                <div class="input-group">
+                    <!-- 空白區塊保留小時位置 -->
+                </div>
+                <div class="input-group">
+                    <label for="extraTimeMinutes">額外分鐘：</label>
+                    <input type="number" id="extraTimeMinutes" min="0" value="0">
+                </div>
+                <div class="input-group">
+                    <label for="extraTimeSeconds">額外秒數：</label>
+                    <input type="number" id="extraTimeSeconds" min="0" max="59" value="0">
+                </div>
             </div>
         </div>
         
