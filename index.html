@@ -256,6 +256,11 @@
     <div id="reminder-overlay" class="reminder-overlay">
         <div class="reminder-text">提醒時間到！</div>
     </div>
+    
+    <!-- 時間到全螢幕提示 -->
+    <div id="times-up-overlay" class="reminder-overlay" style="background-color: #8B0000; z-index: 3000;">
+        <div class="reminder-text" style="font-size: 8vw;">時間到！</div>
+    </div>
 
     <script>
         // DOM 元素
@@ -279,6 +284,7 @@
         const fullscreenTimer = document.getElementById('fullscreen-timer');
         const exitFullscreenBtn = document.getElementById('exit-fullscreen');
         const reminderOverlay = document.getElementById('reminder-overlay');
+        const timesUpOverlay = document.getElementById('times-up-overlay');
         const fullscreenPauseBtn = document.getElementById('fullscreen-pause-btn');
         const fullscreenResetBtn = document.getElementById('fullscreen-reset-btn');
         
@@ -355,6 +361,11 @@
             // 點擊黑色提醒覆蓋層時關閉
             reminderOverlay.addEventListener('click', function() {
                 reminderOverlay.style.display = 'none';
+            });
+            
+            // 點擊時間到覆蓋層時關閉
+            timesUpOverlay.addEventListener('click', function() {
+                timesUpOverlay.style.display = 'none';
             });
         }
         
@@ -521,6 +532,7 @@
             
             // 隱藏提醒覆蓋層
             reminderOverlay.style.display = 'none';
+            timesUpOverlay.style.display = 'none';
             
             // 如果在全螢幕模式則退出
             if (isFullscreen) {
@@ -572,6 +584,12 @@
                     
                     // 播放提示音
                     playAlarm();
+                    
+                    // 顯示全螢幕時間到提示
+                    timesUpOverlay.style.display = 'flex';
+                    setTimeout(function() {
+                        timesUpOverlay.style.display = 'none';
+                    }, 5000); // 5秒後自動關閉
                     
                     // 更新 UI
                     updateTimerDisplay(0);
