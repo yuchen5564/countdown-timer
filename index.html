@@ -44,11 +44,23 @@
             text-align: center;
             transition: color 0.5s ease;
         }
+        .fullscreen-gray {
+            background-color: #444444; /* 深灰底 */
+        }
+        .fullscreen-timer-gray {
+            color: white;
+        }
         .fullscreen-dark {
-            background-color: black;
+            background-color: black; /* 黑底 */
         }
         .fullscreen-timer-dark {
             color: white;
+        }
+        .fullscreen-red {
+            background-color: #8B0000; /* 暗紅色背景 */
+        }
+        .fullscreen-timer-red {
+            color: white; /* 白色文字 */
         }
         .fullscreen-controls {
             position: absolute;
@@ -69,7 +81,15 @@
             border-radius: 5px;
             transition: color 0.5s ease, border-color 0.5s ease;
         }
+        .exit-fullscreen.gray {
+            color: white;
+            border-color: white;
+        }
         .exit-fullscreen.dark {
+            color: white;
+            border-color: white;
+        }
+        .exit-fullscreen.red {
             color: white;
             border-color: white;
         }
@@ -193,6 +213,22 @@
                 <label for="reminderSeconds">提醒時間（剩餘秒數）：</label>
                 <input type="number" id="reminderSeconds" min="0" max="59" value="0">
             </div>
+            <div class="form-group">
+                <label for="finalAlertMinutes">最後警告時間（剩餘分鐘）：</label>
+                <input type="number" id="finalAlertMinutes" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="finalAlertSeconds">最後警告時間（剩餘秒數）：</label>
+                <input type="number" id="finalAlertSeconds" min="0" max="59" value="0">
+            </div>
+            <div class="form-group">
+                <label for="extraTimeMinutes">最後允許時間（倒數結束後分鐘）：</label>
+                <input type="number" id="extraTimeMinutes" min="0" value="0">
+            </div>
+            <div class="form-group">
+                <label for="extraTimeSeconds">最後允許時間（倒數結束後秒數）：</label>
+                <input type="number" id="extraTimeSeconds" min="0" max="59" value="0">
+            </div>
         </div>
         
         <div class="timer-display" id="timer">00:00:00</div>
@@ -228,6 +264,10 @@
         const secondsInput = document.getElementById('seconds');
         const reminderMinutesInput = document.getElementById('reminderMinutes');
         const reminderSecondsInput = document.getElementById('reminderSeconds');
+        const finalAlertMinutesInput = document.getElementById('finalAlertMinutes');
+        const finalAlertSecondsInput = document.getElementById('finalAlertSeconds');
+        const extraTimeMinutesInput = document.getElementById('extraTimeMinutes');
+        const extraTimeSecondsInput = document.getElementById('extraTimeSeconds');
         const timerDisplay = document.getElementById('timer');
         const startBtn = document.getElementById('start-btn');
         const pauseBtn = document.getElementById('pause-btn');
@@ -247,9 +287,13 @@
         let totalSeconds = 0;
         let remainingSeconds = 0;
         let reminderSeconds = 0;
+        let finalAlertSeconds = 0;
+        let extraTimeSeconds = 0;
         let isRunning = false;
         let isPaused = false;
+        let inExtraTime = false;
         let reminderTriggered = false;
+        let finalAlertTriggered = false;
         let isFullscreen = false;
         
         // 初始化
@@ -279,6 +323,24 @@
                 if (this.value > 59) this.value = 59;
             });
             
+            finalAlertMinutesInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+            });
+            
+            finalAlertSecondsInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 59) this.value = 59;
+            });
+            
+            extraTimeMinutesInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+            });
+            
+            extraTimeSecondsInput.addEventListener('input', function() {
+                if (this.value < 0) this.value = 0;
+                if (this.value > 59) this.value = 59;
+            });
+            
             // 按鈕事件
             startBtn.addEventListener('click', startTimer);
             pauseBtn.addEventListener('click', pauseTimer);
@@ -300,9 +362,7 @@
         function enterFullscreen() {
             mainContainer.style.display = 'none';
             fullscreenView.style.display = 'flex';
-            fullscreenView.classList.remove('fullscreen-dark');
-            fullscreenTimer.classList.remove('fullscreen-timer-dark');
-            exitFullscreenBtn.classList.remove('dark');
+            resetFullscreenColors();
             isFullscreen = true;
             
             // 同步全螢幕按鈕狀態
@@ -314,6 +374,19 @@
             } else {
                 fullscreenPauseBtn.textContent = '暫停';
             }
+        }
+        
+        // 重置全螢幕顏色
+        function resetFullscreenColors() {
+            fullscreenView.classList.remove('fullscreen-gray');
+            fullscreenView.classList.remove('fullscreen-dark');
+            fullscreenView.classList.remove('fullscreen-red');
+            fullscreenTimer.classList.remove('fullscreen-timer-gray');
+            fullscreenTimer.classList.remove('fullscreen-timer-dark');
+            fullscreenTimer.classList.remove('fullscreen-timer-red');
+            exitFullscreenBtn.classList.remove('gray');
+            exitFullscreenBtn.classList.remove('dark');
+            exitFullscreenBtn.classList.remove('red');
         }
         
         // 退出全螢幕模式
@@ -332,10 +405,16 @@
                 const seconds = parseInt(secondsInput.value) || 0;
                 const reminderMins = parseInt(reminderMinutesInput.value) || 0;
                 const reminderSecs = parseInt(reminderSecondsInput.value) || 0;
+                const finalAlertMins = parseInt(finalAlertMinutesInput.value) || 0;
+                const finalAlertSecs = parseInt(finalAlertSecondsInput.value) || 0;
+                const extraTimeMins = parseInt(extraTimeMinutesInput.value) || 0;
+                const extraTimeSecs = parseInt(extraTimeSecondsInput.value) || 0;
                 
                 // 計算總秒數
                 totalSeconds = hours * 3600 + minutes * 60 + seconds;
                 reminderSeconds = reminderMins * 60 + reminderSecs;
+                finalAlertSeconds = finalAlertMins * 60 + finalAlertSecs;
+                extraTimeSeconds = extraTimeMins * 60 + extraTimeSecs;
                 
                 if (totalSeconds <= 0) {
                     alert('請設定有效的時間！');
@@ -347,7 +426,14 @@
                     reminderSeconds = totalSeconds;
                 }
                 
+                // 確保最後警告時間不大於總時間
+                if (finalAlertSeconds > totalSeconds) {
+                    finalAlertSeconds = totalSeconds;
+                }
+                
                 reminderTriggered = false;
+                finalAlertTriggered = false;
+                inExtraTime = false;
                 remainingSeconds = totalSeconds;
                 
                 // 更新 UI
@@ -360,6 +446,10 @@
                 secondsInput.disabled = true;
                 reminderMinutesInput.disabled = true;
                 reminderSecondsInput.disabled = true;
+                finalAlertMinutesInput.disabled = true;
+                finalAlertSecondsInput.disabled = true;
+                extraTimeMinutesInput.disabled = true;
+                extraTimeSecondsInput.disabled = true;
                 
                 // 開始倒數
                 isRunning = true;
@@ -376,6 +466,7 @@
                 // 從暫停恢復
                 isPaused = false;
                 pauseBtn.textContent = '暫停';
+                fullscreenPauseBtn.textContent = '暫停';
                 countdown = setInterval(updateTimer, 1000);
                 
                 // 如果不在全螢幕，則進入全螢幕
@@ -391,6 +482,7 @@
                 clearInterval(countdown);
                 isPaused = true;
                 pauseBtn.textContent = '繼續';
+                fullscreenPauseBtn.textContent = '繼續';
             } else if (isPaused) {
                 startTimer(); // 恢復計時
             }
@@ -407,6 +499,7 @@
             pauseBtn.disabled = true;
             resetBtn.disabled = true;
             pauseBtn.textContent = '暫停';
+            fullscreenPauseBtn.textContent = '暫停';
             
             // 啟用設定面板
             settingsPanel.style.opacity = "1";
@@ -415,6 +508,10 @@
             secondsInput.disabled = false;
             reminderMinutesInput.disabled = false;
             reminderSecondsInput.disabled = false;
+            finalAlertMinutesInput.disabled = false;
+            finalAlertSecondsInput.disabled = false;
+            extraTimeMinutesInput.disabled = false;
+            extraTimeSecondsInput.disabled = false;
             
             // 重設顯示
             updateTimerDisplay(0);
@@ -427,6 +524,7 @@
             
             // 如果在全螢幕模式則退出
             if (isFullscreen) {
+                resetFullscreenColors();
                 exitFullscreen();
             }
         }
@@ -436,40 +534,99 @@
             remainingSeconds--;
             
             if (remainingSeconds <= 0) {
-                // 時間到
-                clearInterval(countdown);
-                isRunning = false;
-                
-                // 顯示完成通知
-                if (!isFullscreen) {
-                    notification.textContent = '時間到！';
-                    notification.className = 'notification finished';
-                    notification.style.display = 'block';
-                }
-                
-                // 播放提示音
-                playAlarm();
-                
-                // 更新 UI
-                updateTimerDisplay(0);
-                pauseBtn.disabled = true;
-                fullscreenPauseBtn.disabled = true;
-                
-                // 如果在全螢幕模式，則退出
-                if (isFullscreen) {
-                    exitFullscreen();
+                // 檢查是否有額外時間
+                if (extraTimeSeconds > 0 && !inExtraTime) {
+                    // 進入額外時間階段
+                    inExtraTime = true;
+                    remainingSeconds = extraTimeSeconds;
+                    
+                    // 播放提示音
+                    playAlarm();
+                    
+                    // 設置暗紅色背景
+                    if (isFullscreen) {
+                        resetFullscreenColors();
+                        fullscreenView.classList.add('fullscreen-red');
+                        fullscreenTimer.classList.add('fullscreen-timer-red');
+                        exitFullscreenBtn.classList.add('red');
+                    } else {
+                        // 提示時間到，正在進入額外時間
+                        notification.textContent = '倒數時間到！進入最後允許時間';
+                        notification.className = 'notification finished';
+                        notification.style.display = 'block';
+                    }
+                    
+                    // 更新顯示
+                    updateTimerDisplay(remainingSeconds);
+                } else {
+                    // 真正時間到
+                    clearInterval(countdown);
+                    isRunning = false;
+                    
+                    // 顯示完成通知
+                    if (!isFullscreen) {
+                        notification.textContent = '時間到！';
+                        notification.className = 'notification finished';
+                        notification.style.display = 'block';
+                    }
+                    
+                    // 播放提示音
+                    playAlarm();
+                    
+                    // 更新 UI
+                    updateTimerDisplay(0);
+                    pauseBtn.disabled = true;
+                    fullscreenPauseBtn.disabled = true;
+                    
+                    // 如果在全螢幕模式，則退出
+                    if (isFullscreen) {
+                        exitFullscreen();
+                    }
                 }
             } else {
-                // 檢查提醒時間
-                if (reminderSeconds > 0 && remainingSeconds <= reminderSeconds && !reminderTriggered) {
-                    // 觸發提醒 - 如果在全螢幕模式，將背景變為黑色，文字變為白色
+                // 檢查最後警告時間
+                if (finalAlertSeconds > 0 && remainingSeconds <= finalAlertSeconds && !finalAlertTriggered && !inExtraTime) {
+                    // 觸發最後警告 - 將背景變為黑色，文字變為白色
                     if (isFullscreen) {
+                        // 先移除之前的樣式
+                        resetFullscreenColors();
+                        // 設置黑色背景
                         fullscreenView.classList.add('fullscreen-dark');
                         fullscreenTimer.classList.add('fullscreen-timer-dark');
                         exitFullscreenBtn.classList.add('dark');
                     } else {
                         // 在非全螢幕模式下使用覆蓋層
                         reminderOverlay.style.display = 'flex';
+                        reminderOverlay.querySelector('.reminder-text').textContent = '最後警告時間到！';
+                        reminderOverlay.style.backgroundColor = '#000000'; // 黑色
+                        // 三秒後自動關閉提醒
+                        setTimeout(function() {
+                            reminderOverlay.style.display = 'none';
+                        }, 3000);
+                    }
+                    
+                    // 播放警告音
+                    playBeep();
+                    
+                    // 標記最後警告已觸發
+                    finalAlertTriggered = true;
+                }
+                // 檢查提醒時間
+                else if (reminderSeconds > 0 && remainingSeconds <= reminderSeconds && !reminderTriggered && !inExtraTime) {
+                    // 觸發提醒 - 如果在全螢幕模式，將背景變為深灰色，文字變為白色
+                    if (isFullscreen) {
+                        // 只有在沒有觸發最後警告時才變灰
+                        if (!finalAlertTriggered) {
+                            resetFullscreenColors();
+                            fullscreenView.classList.add('fullscreen-gray');
+                            fullscreenTimer.classList.add('fullscreen-timer-gray');
+                            exitFullscreenBtn.classList.add('gray');
+                        }
+                    } else {
+                        // 在非全螢幕模式下使用覆蓋層
+                        reminderOverlay.style.display = 'flex';
+                        reminderOverlay.querySelector('.reminder-text').textContent = '提醒時間到！';
+                        reminderOverlay.style.backgroundColor = '#444444'; // 深灰色
                         // 三秒後自動關閉提醒
                         setTimeout(function() {
                             reminderOverlay.style.display = 'none';
